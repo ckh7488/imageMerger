@@ -53,26 +53,5 @@ export default async function handler(
     
   
   res.send("hi");
-  // const bb : Busboy = busboy({headers:req.headers});
-  // req.body
-  // // console.log(req.headers);
-  // bb.on('file',(name: string, file, mimeType : busboy.FieldInfo)=>{
-  //   console.log(name, mimeType, file);
-  //   file.on('data', ( data:Buffer )=>{
-  //     // console.log(`${name} has data length ${data.length}`)
-  //     console.log(data);
-  //     res.write(data,'binary');
-  //     res.end(null, 'binary');
-  //     sharp(data)
-  //     .toFile('hi.png', (err :Error, info : sharp.OutputInfo)=>{
-  //       console.log(info);
-        
-  //       console.log(err);
-  //     });
-  //   })
-  // })
-  // // req.pipe(bb);
-  // bb.end(req.body);
-  // // console.log(req.body);
-  // // res.status(200).json({ name: 'John Doe' })
+
 }
