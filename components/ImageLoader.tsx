@@ -46,7 +46,7 @@ const ImageLoader = (props: any) => {
                         const iUrl = URL.createObjectURL(e);
                         blobUrlArr.push(iUrl);
                         return (
-                            <div style={{}} key={e.name}>
+                            <div key={e.name}>
                                 <img src={iUrl} style={{ height: '150px' }} ></img>
                                 <span>value : </span><input disabled={isLock} onChange={ (e)=>{handleStringChange(e,idx+1)} }></input>
                             </div>
@@ -61,8 +61,8 @@ const ImageLoader = (props: any) => {
                 onChange={handleInputChange}
             />
             <button disabled={isLock} onClick={()=>{handleLock() }}>{isLock ? 'Locked' : 'Lock'}</button>
-            <button disabled={isLock} onClick={props.handleDel.bind(null, props.myKey)}>delete this tab</button>
-            <button onClick={()=>{console.log(props, fileArr, inputValues, isLock)}}>state status</button>
+            { props.handleDel ? <button disabled={isLock} onClick={props.handleDel.bind(null, props.myKey)}>delete this tab</button> : <></> } 
+            {/* <button onClick={()=>{console.log(props, fileArr, inputValues, isLock)}}>state status</button> */}
         </div>
     )
 }

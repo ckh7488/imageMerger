@@ -60,7 +60,7 @@ const Home: NextPage = () => {
     <div>
       <div>
         <span>background Img</span>
-        <ImageLoader key={0} handleDel={handleDel} myKey={0} handleSetDataObj={handleSetDataObj}></ImageLoader>
+        <ImageLoader myKey={0} handleSetDataObj={handleSetDataObj}></ImageLoader>
       </div>
       <br /><br />
       <button onClick={() => { setAttrTabArr([...attrTabArr, attrTabArr.slice(-1)[0] + 1]) }}>addTabs</button>
@@ -69,10 +69,10 @@ const Home: NextPage = () => {
       {
         attrTabArr.slice(1).map(e => {
           return (
-            <>
+            <div key={e}>
               <span>attr Img</span>
-              <ImageLoader key={e} handleDel={handleDel} myKey={e} handleSetDataObj={handleSetDataObj}></ImageLoader>
-            </>
+              <ImageLoader handleDel={handleDel} myKey={e} handleSetDataObj={handleSetDataObj}></ImageLoader>
+            </div>
           )
         })
       }
