@@ -1,6 +1,5 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import sharp from 'sharp';
-import busboy, { Busboy } from 'busboy';
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { MongoClient } from 'mongodb';
 import mongoClient from '../../lib/mongodb'
@@ -8,12 +7,14 @@ import mongoClient from '../../lib/mongodb'
 
 
 
-type reqBodyObject = {
-  [num: string]: {
+interface reqBodyObject {
+  [num: string ]: {
     AttrName: string,
     values: Array<string>,
     fileArr: Array<{ [idx: string]: number }>
   }
+  // description : {desIdx : string }[]
+  // external_url : {extIdx : string}[]
 }
 
 
@@ -31,8 +32,9 @@ export default async function handler(
 ) {
 
   const myObj: reqBodyObject = JSON.parse(req.body);
-  // console.log(Object.keys(myObj));
-  // console.log(Object.keys(myObj['0']));
+  console.log(Object.keys(myObj));
+  console.log(Object.values(myObj.description));
+  console.log(Object.values(myObj.external_url));
   // console.log(myObj['1']['AttrName'], myObj['1']['values']);
 
 
@@ -51,49 +53,67 @@ export default async function handler(
       //image part
       const aImg = new Uint8Array(Object.values(file));
 
-
-      // return {  meta: [meta] };
       return { imgBuffer: aImg, meta: [meta] };
     })
   )
+
+
   // 
+  for (let index of Object.keys(myObj).slice(1,-2)) {
 
-  // console.log(dataArr.map(e => e.meta));
-
-  for (let index of Object.keys(myObj).slice(1)) {
-    
     const indexAttrName = myObj[index].AttrName;
     console.log(indexAttrName);
 
     const tmpArr = [];
     for (let dataArrIndex in dataArr) {
-      
+
       for (let myObjIndex in myObj[index].fileArr) {
         // metadata part
-        const newMeta = JSON.parse(JSON.stringify(dataArr[dataArrIndex].meta)); 
+        const newMeta = JSON.parse(JSON.stringify(dataArr[dataArrIndex].meta));
         const newMetaObj = { trait_type: indexAttrName, value: myObj[index].values[myObjIndex] };
         newMeta.push(newMetaObj);
         // tmpArr.push({meta : newMeta});
         //img part
         const baseImg = dataArr[dataArrIndex].imgBuffer;
         const img = await
-        sharp(baseImg)
-        .composite([
-          {input : new Uint8Array(Object.values(myObj[index].fileArr[myObjIndex]))}
-        ])
-        .toBuffer()
+          sharp(baseImg)
+            .composite([
+              { input : new Uint8Array(Object.values(myObj[index].fileArr[myObjIndex])) }
+            ])
+            .toBuffer()
 
         sharp(baseImg)
-        .composite([
-          {input : new Uint8Array(Object.values(myObj[index].fileArr[myObjIndex]))}
-        ])
-        .toFile(`${dataArrIndex}_${myObjIndex}.png`);
-        tmpArr.push({imgBuffer : img ,meta : newMeta});
+          .composite([
+            { input: new Uint8Array(Object.values(myObj[index].fileArr[myObjIndex])) }
+          ])
+          .toFile(`${dataArrIndex}_${myObjIndex}.png`);
+        tmpArr.push({ imgBuffer: img, meta: newMeta });
       }
     }
     dataArr = tmpArr;
   }
-  console.log('dataArr is : ',dataArr.map(e=>e.meta));
+  console.log('dataArr metadata is : ', dataArr.map(e => e.meta));
+  console.log('dataArr img is : ', dataArr.map(e => e.imgBuffer.length));
+
+  type DataArr = { imgBuffer: Buffer | Uint8Array, meta: { trait_type: string, value: string }[] }[];
+
+  // db structure 
+
+  // dbName : MetaData
+  // collectionName : test    // should be username or ...?
+
+  // document structure
+  // {
+  //   
+  //   {
+  //     "description": "Friendly OpenSea Creature that enjoys long swims in the ocean.",   // front page should get this field from user. ( optional )
+  //     "external_url": "https://openseacreatures.io/3",
+  //     "image": "https://storage.googleapis.com/opensea-prod.appspot.com/puffs/3.png",
+  //     "name": "Dave Starbelly",
+  //     "attributes": [... ], 
+  //   }
+  // }
+  //  many of document which has this structure wll be placed at db('MetaData').collection(`${userId}`)
 
 
   // const myClient : MongoClient  = await mongoClient ;
@@ -101,7 +121,6 @@ export default async function handler(
 
 
 
-  
   // console.log(dataArr.map(e => e.meta));
   // // forEach(index => {
   //   const a = dataArr.map(async dataObj => {

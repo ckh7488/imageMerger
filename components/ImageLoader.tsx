@@ -2,8 +2,8 @@ import { useState, BaseSyntheticEvent, useEffect } from "react";
 
 
 const ImageLoader = (props: any) => {
-    // console.log(props)
     const [fileArr, setFileArr] = useState<Array<File>>([]);
+    const [imgUrlArr, setImgUrlArr] = useState<Array<string>>([]);
     const [inputValues, setInputValues] = useState<Array<string>>([]);
     const [isLock, setIsLock] = useState<boolean>(false);
     let blobUrlArr : Array<any> = [];
@@ -17,19 +17,17 @@ const ImageLoader = (props: any) => {
     const handleInputChange = async (e: BaseSyntheticEvent) => {
         setInputValues([]);
         if(blobUrlArr.length > 0) {blobUrlArr.forEach(e=> URL.revokeObjectURL(e)); blobUrlArr=[]; };
-        // const myFile1: File = e.target.files[0];
-        // myFile1.arrayBuffer().then(r => r.slice(0, 10)).then(console.log);
 
         const tmpArr: Array<File> = [];
         Object.keys(e.target.files).forEach(key => { tmpArr.push(e.target.files[key]) });
 
         setFileArr(tmpArr);
+        setImgUrlArr(tmpArr.map(e=>URL.createObjectURL(e)));
     }
 
     const handleLock = ()=>{
         if(props.handleSetDataObj && !isLock) {
             const myObj : {[key : string]: any} = {AttrName : inputValues[0], values : inputValues.slice(1), fileArr : fileArr};
-            // myObj = {AttrName : inputValues[0], values : inputValues.slice(1), fileArr : fileArr};
             props.handleSetDataObj(props.myKey, myObj);
             setIsLock(true);
         }
@@ -43,11 +41,11 @@ const ImageLoader = (props: any) => {
             <span>
                 {
                     fileArr.map((e,idx) => {
-                        const iUrl = URL.createObjectURL(e);
-                        blobUrlArr.push(iUrl);
+                        // const iUrl = URL.createObjectURL(e);
+                        // blobUrlArr.push(iUrl);
                         return (
                             <div key={e.name}>
-                                <img src={iUrl} style={{ height: '150px' }} ></img>
+                                <img src={imgUrlArr[idx]} style={{ height: '150px' }} ></img>
                                 <span>value : </span><input disabled={isLock} onChange={ (e)=>{handleStringChange(e,idx+1)} }></input>
                             </div>
                         )
