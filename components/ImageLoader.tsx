@@ -17,8 +17,8 @@ const ImageLoader = (props: any) => {
     const handleInputChange = async (e: BaseSyntheticEvent) => {
         setInputValues([]);
         if(blobUrlArr.length > 0) {blobUrlArr.forEach(e=> URL.revokeObjectURL(e)); blobUrlArr=[]; };
-        const myFile1: File = e.target.files[0];
-        myFile1.arrayBuffer().then(r => r.slice(0, 10)).then(console.log);
+        // const myFile1: File = e.target.files[0];
+        // myFile1.arrayBuffer().then(r => r.slice(0, 10)).then(console.log);
 
         const tmpArr: Array<File> = [];
         Object.keys(e.target.files).forEach(key => { tmpArr.push(e.target.files[key]) });
@@ -39,7 +39,6 @@ const ImageLoader = (props: any) => {
 
     return (
         <div style={{ border: 'solid black 1px' }}>
-            <div>other Img</div>
             <span>AttrName : </span><input disabled={isLock} onChange={ (e)=>{handleStringChange(e,0)}} value={inputValues[0] ?? ''} />
             <span>
                 {

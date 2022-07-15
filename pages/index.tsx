@@ -3,9 +3,15 @@ import Head from 'next/head'
 import Image from 'next/image'
 import React, { BaseSyntheticEvent, createElement, ReactComponentElement, SyntheticEvent, useRef, useState } from 'react'
 import styles from '../styles/Home.module.css'
-import sharp from 'sharp'
 import ImageLoader from '../components/ImageLoader'
 
+type dataObject = {
+  [num: number]: {
+    AttrName: string,
+    values: Array<string>,
+    fileArr: Array<any>
+  }
+}
 
 
 const MyImg: Function = (mySrc: Uint8Array) => {
@@ -16,97 +22,64 @@ const MyImg: Function = (mySrc: Uint8Array) => {
 }
 
 const Home: NextPage = () => {
-  const [fileArr, setFileArr] = useState<Array<File>>([]);
-  const [backgroundImg, setBackgroundImg] = useState<any>(null);
-  const [attrTabArr, setAttrTabArr] = useState<Array<any>>([0,1]);
-  const [dataObj, setDataObj] = useState<Object>({});
-  
-  const handleSetDataObj = (key : number, obj : Object)=>{
-    const myObj : {[key : number] : any} = {...dataObj};
+  const [attrTabArr, setAttrTabArr] = useState<Array<any>>([0, 1]);
+  const [dataObj, setDataObj] = useState<dataObject>({});
+
+  const handleSetDataObj = (key: number, obj: Object) => {
+    const myObj: { [key: number]: any } = { ...dataObj };
     myObj[key] = obj;
     setDataObj(myObj);
   }
 
-  const handleDel = (keyVal : number)=>{
-    const newAttrTabArr = attrTabArr.filter(e=>e!==keyVal);
+  const handleDel = (keyVal: number) => {
+    const newAttrTabArr = attrTabArr.filter(e => e !== keyVal);
     setAttrTabArr(newAttrTabArr);
   }
 
+  const handleSend = () => {
 
-  const handleBackInputChange = async (e: BaseSyntheticEvent) => {
-    // const myFile1 : File = e.target.files[0]
-    const tmpArr: Array<File> = [];
-    Object.keys(e.target.files).forEach(key => { tmpArr.push(e.target.files[key]) });
+    const promiseArr = Object.keys(dataObj).map(myKey => {
 
-    setBackgroundImg(tmpArr);
-  }
+      const objKey = parseInt(myKey);
+      const a : Array<Promise<Uint8Array>> = dataObj[objKey].fileArr.map( file => {
+         if(file.arrayBuffer) return (file as File).arrayBuffer().then( ab=> new Uint8Array(ab) ) ;
+         return file;
+        })
 
-  const handleInputChange = async (e: BaseSyntheticEvent) => {
-
-    //test code start
-    // const myFile1: File = e.target.files[0];
-    // myFile1.arrayBuffer().then(r => r.slice(0, 10)).then(console.log);
-    // myFile1.text().then( (r)=>{ console.log(r.slice(1)); })
-
-    //test code end
-
-
-    const tmpArr: Array<File> = [];
-    Object.keys(e.target.files).forEach(key => { tmpArr.push(e.target.files[key]) });
-    // console.log(tmpArr);
-
-    setFileArr(tmpArr);
-  }
-
-  const handleSend = async () => {
-
-    const a = fileArr.map(myFile => myFile.arrayBuffer().then(ab => new Uint8Array(ab)));
-    Promise.all(a)
-      .then(async x => {
-        const tmpObj: { [key: string]: any } = { comp: {} };
-        x.forEach((e, idx) => {
-          const i = idx.toString();
-          tmpObj.comp[i] = e
-        });
-        tmpObj.bg = await backgroundImg[0].arrayBuffer().then((ab: any) => new Uint8Array(ab));
-        return tmpObj
-      })
-      .then(r => { console.log(r); fetch('/api/hello', { method: "POST", body: JSON.stringify(r) }) })
-
-
+      return Promise.all(a)
+        .then((x : Array<Uint8Array>) =>{
+          
+          dataObj[objKey].fileArr = x;
+        })
+    })
+    Promise.all(promiseArr)
+    .then(t => fetch('/api/hello',  { method: "POST", body: JSON.stringify(dataObj) }))
   }
 
   return (
     <div>
       <div>
         <span>background Img</span>
-        <input
-          type="file"
-          onChange={handleBackInputChange}
-        />
+        <ImageLoader key={0} handleDel={handleDel} myKey={0} handleSetDataObj={handleSetDataObj}></ImageLoader>
       </div>
-      <br/><br/>
-      <button onClick={()=>{setAttrTabArr([...attrTabArr , attrTabArr.slice(-1)[0]+1])} }>addTabs</button>
-      <br/><br/>
+      <br /><br />
+      <button onClick={() => { setAttrTabArr([...attrTabArr, attrTabArr.slice(-1)[0] + 1]) }}>addTabs</button>
+      <br /><br />
 
-      {/* <div>
-        <span>other Img</span>
-        <input
-          type="file" multiple
-          onChange={handleInputChange}
-        />
-      </div> */}
       {
-        attrTabArr.slice(1).map(e=> <ImageLoader key={e} handleDel={handleDel} myKey={e} handleSetDataObj={handleSetDataObj}></ImageLoader>)
+        attrTabArr.slice(1).map(e => {
+          return (
+            <>
+              <span>attr Img</span>
+              <ImageLoader key={e} handleDel={handleDel} myKey={e} handleSetDataObj={handleSetDataObj}></ImageLoader>
+            </>
+          )
+        })
       }
 
       <button onClick={handleSend}>send</button>
-      <button onClick={()=>{console.log(dataObj)}}>log dataObj</button>
-      {/* <div>
-        {imgUrlArr.map(e =>
-          <img src={e}></img>
-        )}
-      </div> */}
+      <button onClick={() => { console.log(dataObj) }}>log dataObj</button>
+      <button onClick={() => { console.log(attrTabArr)}}>tabs</button>
     </div>
   )
 }
