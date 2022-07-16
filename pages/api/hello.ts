@@ -1,30 +1,27 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import sharp from 'sharp';
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { MongoClient } from 'mongodb';
 import mongoClient from '../../lib/mongodb'
 
-
+type simpleParsedObj = { [idx: string]: string }
+type indexSignaturesOfParedObj = {
+  AttrName: string,
+  values: Array<string>,
+  fileArr: Array<{ [idx: string]: number }>
+}
 
 
 interface reqBodyObject {
-  [num: string ]: {
-    AttrName: string,
-    values: Array<string>,
-    fileArr: Array<{ [idx: string]: number }>
-  }
-  // description : {desIdx : string }[]
-  // external_url : {extIdx : string}[]
+  [key: string]: indexSignaturesOfParedObj | simpleParsedObj
+  description: simpleParsedObj
+  external_url: simpleParsedObj
+}
+
+function isIndexSignaturesOfParedObj(arg: any): arg is indexSignaturesOfParedObj {
+  return typeof arg.AttrName === 'string';
 }
 
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb' // Set desired value here
-    }
-  }
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -35,6 +32,7 @@ export default async function handler(
   console.log(Object.keys(myObj));
   console.log(Object.values(myObj.description));
   console.log(Object.values(myObj.external_url));
+
   // console.log(myObj['1']['AttrName'], myObj['1']['values']);
 
 
@@ -42,55 +40,62 @@ export default async function handler(
   const backgroundImg = new Uint8Array(Object.values(myObj['0'].fileArr[0]));
   // const compImg = new Uint8Array(Object.values(myObj['1'].fileArr[4]));
   // let dataArr: { imgBuffer: Buffer | Uint8Array, meta: { trait_type: string, value: string }[] }[] = [];
+  let dataArr: Array<{ imgBuffer: Uint8Array, meta: Array<{ trait_type: string, value: string }> }> = [];
 
-  let dataArr = await Promise.all(
-    myObj['0'].fileArr.map(async (file, idx) => {
-      //metaData part
-      const name = myObj['0'].AttrName;
-      const val = myObj['0'].values[idx];
-      const meta = { trait_type: name, value: val };
+  if (isIndexSignaturesOfParedObj(myObj['0'])) {
+    dataArr = await Promise.all(
+      myObj['0'].fileArr.map(async (file, idx) => {
+        //metaData part
+        const name = myObj['0'].AttrName;
+        const val = myObj['0'].values[idx];
+        const meta = { trait_type: name, value: val };
 
-      //image part
-      const aImg = new Uint8Array(Object.values(file));
+        //image part
+        const aImg = new Uint8Array(Object.values(file));
 
-      return { imgBuffer: aImg, meta: [meta] };
-    })
-  )
-
+        return { imgBuffer: aImg, meta: [meta] };
+      })
+    )
+  }
+  else { res.send({ message: 'received data is not right' }); return; }
 
   // 
-  for (let index of Object.keys(myObj).slice(1,-2)) {
+  for (let index of Object.keys(myObj).slice(1, -2)) {
+    
+    if (isIndexSignaturesOfParedObj(myObj[index])) {
+      const indexedObj = myObj[index] as indexSignaturesOfParedObj ;
+      const indexAttrName = indexedObj.AttrName;
+      console.log(indexAttrName);
 
-    const indexAttrName = myObj[index].AttrName;
-    console.log(indexAttrName);
+      const tmpArr = [];
+      for (let dataArrIndex in dataArr) {
 
-    const tmpArr = [];
-    for (let dataArrIndex in dataArr) {
+        for (let myObjIndex in indexedObj.fileArr) {
+          // metadata part
+          const newMeta = JSON.parse(JSON.stringify(dataArr[dataArrIndex].meta));
+          const newMetaObj = { trait_type: indexAttrName, value: indexedObj.values[myObjIndex] };
+          newMeta.push(newMetaObj);
+          // tmpArr.push({meta : newMeta});
+          //img part
+          const baseImg = dataArr[dataArrIndex].imgBuffer;
+          const img = await
+            sharp(baseImg)
+              .composite([
+                { input: new Uint8Array(Object.values(indexedObj.fileArr[myObjIndex])) }
+              ])
+              .toBuffer()
 
-      for (let myObjIndex in myObj[index].fileArr) {
-        // metadata part
-        const newMeta = JSON.parse(JSON.stringify(dataArr[dataArrIndex].meta));
-        const newMetaObj = { trait_type: indexAttrName, value: myObj[index].values[myObjIndex] };
-        newMeta.push(newMetaObj);
-        // tmpArr.push({meta : newMeta});
-        //img part
-        const baseImg = dataArr[dataArrIndex].imgBuffer;
-        const img = await
           sharp(baseImg)
             .composite([
-              { input : new Uint8Array(Object.values(myObj[index].fileArr[myObjIndex])) }
+              { input: new Uint8Array(Object.values(indexedObj.fileArr[myObjIndex])) }
             ])
-            .toBuffer()
-
-        sharp(baseImg)
-          .composite([
-            { input: new Uint8Array(Object.values(myObj[index].fileArr[myObjIndex])) }
-          ])
-          .toFile(`${dataArrIndex}_${myObjIndex}.png`);
-        tmpArr.push({ imgBuffer: img, meta: newMeta });
+            .toFile(`${dataArrIndex}_${myObjIndex}.png`);
+          tmpArr.push({ imgBuffer: img, meta: newMeta });
+        }
       }
+      dataArr = tmpArr;
     }
-    dataArr = tmpArr;
+    else { res.send({ message: 'received data is not right' }); return; }
   }
   console.log('dataArr metadata is : ', dataArr.map(e => e.meta));
   console.log('dataArr img is : ', dataArr.map(e => e.imgBuffer.length));
@@ -116,8 +121,9 @@ export default async function handler(
   //  many of document which has this structure wll be placed at db('MetaData').collection(`${userId}`)
 
 
-  // const myClient : MongoClient  = await mongoClient ;
+  const myClient  = await mongoClient ;
   // myClient.db('test').collection('test').insertMany();
+  myClient.db('test').collection('test').insertOne({test:"test"});
 
 
 
@@ -167,11 +173,6 @@ export default async function handler(
   // console.log('last one is : ', dataArr.map(e => e.meta));
 
 
-
-
-
-
-
   // // console.log(JSON.parse(req.body));
   // const myObjRes  = JSON.parse(req.body);
   // // console.log(Object.keys(myRes));
@@ -209,4 +210,13 @@ export default async function handler(
 
   res.send("hi");
 
+}
+
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb' // Set desired value here
+    }
+  }
 }
