@@ -61,9 +61,9 @@ export default async function handler(
 
   // 
   for (let index of Object.keys(myObj).slice(1, -2)) {
-    
+
     if (isIndexSignaturesOfParedObj(myObj[index])) {
-      const indexedObj = myObj[index] as indexSignaturesOfParedObj ;
+      const indexedObj = myObj[index] as indexSignaturesOfParedObj;
       const indexAttrName = indexedObj.AttrName;
       console.log(indexAttrName);
 
@@ -85,11 +85,12 @@ export default async function handler(
               ])
               .toBuffer()
 
-          sharp(baseImg)
-            .composite([
-              { input: new Uint8Array(Object.values(indexedObj.fileArr[myObjIndex])) }
-            ])
-            .toFile(`${dataArrIndex}_${myObjIndex}.png`);
+          // img 저장 파트
+          // sharp(baseImg)
+          //   .composite([
+          //     { input: new Uint8Array(Object.values(indexedObj.fileArr[myObjIndex])) }
+          //   ])
+          //   .toFile(`${dataArrIndex}_${myObjIndex}.png`);
           tmpArr.push({ imgBuffer: img, meta: newMeta });
         }
       }
@@ -121,9 +122,44 @@ export default async function handler(
   //  many of document which has this structure wll be placed at db('MetaData').collection(`${userId}`)
 
 
-  const myClient  = await mongoClient ;
-  // myClient.db('test').collection('test').insertMany();
-  myClient.db('test').collection('test').insertOne({test:"test"});
+
+  const myClient = await mongoClient;
+
+  const dbImgItem =
+    dataArr.map((e, idx) => {
+      const imgObj: { [idx: string]: any } = {};
+      imgObj['index'] = idx;
+      imgObj['img'] = e.imgBuffer
+      return imgObj;
+    })
+  myClient.db('test').collection('img').insertMany(dbImgItem);
+
+  const dbMetaItem =
+    dataArr.map((e, idx) => {
+      const metaObj: { [idx: string]: any } = {};
+      // const imgBuffer: Promise<any> = await myClient.db('test').collection('test').find({ index: idx }).toArray()
+      //   .then(
+      //     r => {
+      //       console.log(Object.keys(r[idx].img));
+      //       console.log(r[idx].img?.buffer);     // 이미지 버퍼 쓸때 사용
+      //       sharp(r[idx].img?.buffer)
+      //         .toFile(`${idx}.png`);
+      //       return r[idx].img?.buffer;
+      //     }
+
+      //   );
+      metaObj[`meta_${idx}`] =
+      {
+        description: myObj.description,
+        external_url: myObj.external_url,
+        image: 'imgURL',
+        name : `testName # ${idx}`,
+        attributes : e.meta
+      }
+      return metaObj;
+    })
+  myClient.db('test').collection('meta').insertMany(dbMetaItem);
+  // myClient.db('test').collection('test').insertOne({test:"test"});
 
 
 

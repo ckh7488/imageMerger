@@ -1,4 +1,7 @@
-import { useState, BaseSyntheticEvent, useEffect } from "react";
+import { Button, ButtonBase, Card, CardMedia, IconButton, Paper, TextField } from "@mui/material";
+import { useState, BaseSyntheticEvent } from "react";
+import CloseIcon from '@mui/icons-material/Close'
+import styles from './ImageLoader.module.css'
 
 
 const ImageLoader = (props: any) => {
@@ -36,32 +39,43 @@ const ImageLoader = (props: any) => {
 
 
     return (
-        <div style={{ border: 'solid black 1px' }}>
-            <span>AttrName : </span><input disabled={isLock} onChange={ (e)=>{handleStringChange(e,0)}} value={inputValues[0] ?? ''} />
-            <span>
+        // <div style={{ border: 'solid black 1px' }}>
+        <Paper elevation={3} className={styles.imgLoaderContainer}>
+            <div className={styles.flexContainer}>
+                { props.handleDel ? 
+                <>
+                    <IconButton disabled={isLock} onClick={props.handleDel.bind(null, props.myKey)} className={styles.iconClose}>
+                        <CloseIcon></CloseIcon>
+                    </IconButton>
+                    {/* <Button disabled={isLock} onClick={props.handleDel.bind(null, props.myKey)}>delete this tab</Button> */}
+                </>
+            : <></> } 
+                { fileArr.length > 0 ? <TextField label="Attribute Name" disabled={isLock} onChange={ (e)=>{handleStringChange(e,0)}} value={inputValues[0] ?? ''} /> : <></> }
+            </div>
+            <div className={styles.cardContainer}>
                 {
                     fileArr.map((e,idx) => {
-                        // const iUrl = URL.createObjectURL(e);
-                        // blobUrlArr.push(iUrl);
                         return (
-                            <div key={e.name}>
+                            <Card key={e.name}>
+                                <CardMedia>
                                 <img src={imgUrlArr[idx]} style={{ height: '150px' }} ></img>
-                                <span>value : </span><input disabled={isLock} onChange={ (e)=>{handleStringChange(e,idx+1)} }></input>
-                            </div>
+                                </CardMedia>
+                                <TextField label="value" disabled={isLock} onChange={ (e)=>{handleStringChange(e,idx+1)} }></TextField>
+                            </Card>
                         )
                     }
                     )
                 }
-            </span>
+            </div>
             <input
                 disabled={isLock} 
                 type="file" multiple
                 onChange={handleInputChange}
             />
-            <button disabled={isLock} onClick={()=>{handleLock() }}>{isLock ? 'Locked' : 'Lock'}</button>
-            { props.handleDel ? <button disabled={isLock} onClick={props.handleDel.bind(null, props.myKey)}>delete this tab</button> : <></> } 
+            <Button disabled={isLock} onClick={()=>{handleLock() }}>{isLock ? 'Locked' : 'Lock'}</Button>
             {/* <button onClick={()=>{console.log(props, fileArr, inputValues, isLock)}}>state status</button> */}
-        </div>
+        {/* </div> */}
+        </Paper>
     )
 }
 
